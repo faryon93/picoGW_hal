@@ -109,28 +109,22 @@ int lgw_mcu_rxrf_setconf(uint8_t rfchain, struct lgw_conf_rxrf_s conf) {
 
     /* struct to byte array */
     /* --- 64-bits start --- */
-    data[0] = conf.enable;
+    data[0] = (uint8_t)(conf.enable ? 0x01 : 0x00);
     data[1] = PADDING;
     data[2] = PADDING;
     data[3] = PADDING;
-    data[4] = *(((uint8_t *)(&conf.freq_hz)));
-    data[5] = *(((uint8_t *)(&conf.freq_hz)) + 1);
-    data[6] = *(((uint8_t *)(&conf.freq_hz)) + 2);
-    data[7] = *(((uint8_t *)(&conf.freq_hz)) + 3);
+    memcpy_le(&data[4], &conf.freq_hz, sizeof(conf.freq_hz));   // Byte 4-7
     /* --- 64-bits start --- */
-    data[8] = *(((uint8_t *)(&conf.rssi_offset)));
-    data[9] = *(((uint8_t *)(&conf.rssi_offset)) + 1);
-    data[10] = *(((uint8_t *)(&conf.rssi_offset)) + 2);
-    data[11] = *(((uint8_t *)(&conf.rssi_offset)) + 3);
-    data[12] = *(((uint8_t *)(&conf.type)));
+    memcpy_le(&data[8], &conf.rssi_offset, sizeof(conf.rssi_offset));   // Byte 8 - 11
+    data[12] = (uint8_t)conf.type;
     data[13] = PADDING;
     data[14] = PADDING;
     data[15] = PADDING;
     /* --- 64-bits start --- */
-    data[16] = *(((uint8_t *)(&conf.tx_enable)));
-    data[17] = *(((uint8_t *)(&conf.tx_enable)) + 1);
-    data[18] = *(((uint8_t *)(&conf.tx_enable)) + 2);
-    data[19] = *(((uint8_t *)(&conf.tx_enable)) + 3);
+    data[16] = (uint8_t)(conf.tx_enable ? 0x01 : 0x00);
+    data[17] = 0;
+    data[18] = 0;
+    data[19] = 0;
     size = sizeof(data) / sizeof(uint8_t);
 
     /* prepare command */
@@ -170,25 +164,19 @@ int lgw_mcu_rxif_setconf(uint8_t ifchain, struct lgw_conf_rxif_s conf) {
 
     /* struct to byte array */
     /* --- 64-bits start --- */
-    data[0] = conf.enable;
-    data[1] = *(((uint8_t *)(&conf.rf_chain)));
+    data[0] = (uint8_t)(conf.enable ? 0x01 : 0x00);
+    data[1] = conf.rf_chain;
     data[2] = PADDING;
     data[3] = PADDING;
-    data[4] = *(((uint8_t *)(&conf.freq_hz)));
-    data[5] = *(((uint8_t *)(&conf.freq_hz)) + 1);
-    data[6] = *(((uint8_t *)(&conf.freq_hz)) + 2);
-    data[7] = *(((uint8_t *)(&conf.freq_hz)) + 3);
+    memcpy_le(&data[4], &conf.freq_hz, sizeof(conf.freq_hz));   // Byte 4-7
     /* --- 64-bits start --- */
-    data[8] = *(((uint8_t *)(&conf.bandwidth)));
+    data[8] = conf.bandwidth;
     data[9] = PADDING;
     data[10] = PADDING;
     data[11] = PADDING;
-    data[12] = *(((uint8_t *)(&conf.datarate)));
-    data[13] = *(((uint8_t *)(&conf.datarate)) + 1);
-    data[14] = *(((uint8_t *)(&conf.datarate)) + 2);
-    data[15] = *(((uint8_t *)(&conf.datarate)) + 3);
+    memcpy_le(&data[12], &conf.datarate, sizeof(conf.datarate));    // Byte 12-15
     /* --- 64-bits start --- */
-    data[16] = *(((uint8_t *)(&conf.sync_word_size)));
+    data[16] = conf.sync_word_size;
     data[17] = PADDING;
     data[18] = PADDING;
     data[19] = PADDING;
@@ -197,14 +185,7 @@ int lgw_mcu_rxif_setconf(uint8_t ifchain, struct lgw_conf_rxif_s conf) {
     data[22] = PADDING;
     data[23] = PADDING;
     /* --- 64-bits start --- */
-    data[24] = *(((uint8_t *)(&conf.sync_word)));
-    data[25] = *(((uint8_t *)(&conf.sync_word)) + 1);
-    data[26] = *(((uint8_t *)(&conf.sync_word)) + 2);
-    data[27] = *(((uint8_t *)(&conf.sync_word)) + 3);
-    data[28] = *(((uint8_t *)(&conf.sync_word)) + 4);
-    data[29] = *(((uint8_t *)(&conf.sync_word)) + 5);
-    data[30] = *(((uint8_t *)(&conf.sync_word)) + 6);
-    data[31] = *(((uint8_t *)(&conf.sync_word)) + 7);
+    memcpy_le(&data[24], &conf.sync_word, sizeof(conf.sync_word)); // Byte 24 - 31
     size = sizeof(data) / sizeof(uint8_t);
 
     /* prepare command */
@@ -334,39 +315,36 @@ int lgw_mcu_receive(uint8_t max_pkt, struct lgw_pkt_rx_s *pkt_data) {
     }
 
     /* byte array to struct - the following code is done to work both with 32 or 64 bits host */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstrict-aliasing"
     for (i = 0; i < nb_packet; i++) {
         /* --- 64-bits start --- */
-        pkt_data[i].freq_hz = *((uint32_t*)(&data[0 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i]));
-        pkt_data[i].if_chain = *((uint8_t*)(&data[4 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i]));
-        pkt_data[i].status = *((uint8_t*)(&data[5 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i]));
+        memcpy_le(&pkt_data[i].freq_hz, &data[0 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i], sizeof(pkt_data[i].freq_hz));
+        pkt_data[i].if_chain = data[4 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i];
+        pkt_data[i].status = data[5 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i];
         /* 1 BYTE PADDING FOR 64-bits ALIGNMENT */
         /* 1 BYTE PADDING FOR 64-bits ALIGNMENT */
         /* --- 64-bits start --- */
-        pkt_data[i].count_us = *((uint32_t*)(&data[8 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i]));
-        pkt_data[i].rf_chain = *((uint8_t*)(&data[12 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i]));
-        pkt_data[i].modulation = *((uint8_t*)(&data[13 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i]));
-        pkt_data[i].bandwidth = *((uint8_t*)(&data[14 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i]));
+        memcpy_le(&pkt_data[i].count_us, &data[8 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i], sizeof(pkt_data[i].count_us));
+        pkt_data[i].rf_chain = data[12 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i];
+        pkt_data[i].modulation = data[13 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i];
+        pkt_data[i].bandwidth = data[14 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i];
         /* 1 BYTE PADDING FOR 64-bits ALIGNMENT */
         /* --- 64-bits start --- */
-        pkt_data[i].datarate = *((uint32_t*)(&data[16 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i]));
-        pkt_data[i].coderate = *((uint8_t*)(&data[20 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i]));
+        memcpy_le(&pkt_data[i].datarate, &data[16 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i], sizeof(pkt_data[i].datarate));
+        pkt_data[i].coderate = data[20 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i];
         /* --- 64-bits start --- */
-        pkt_data[i].rssi = *((float*)(&data[24 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i]));
-        pkt_data[i].snr = *((float*)(&data[28 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i]));
+        memcpy_le(&pkt_data[i].rssi, &data[24 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i], sizeof(pkt_data[i].rssi));
+        memcpy_le(&pkt_data[i].snr, &data[28 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i], sizeof(pkt_data[i].snr));
         /* --- 64-bits start --- */
-        pkt_data[i].snr_min = *((float*)(&data[32 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i]));
-        pkt_data[i].snr_max = *((float*)(&data[36 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i]));
+        memcpy_le(&pkt_data[i].snr_min, &data[32 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i], sizeof(pkt_data[i].snr_min));
+        memcpy_le(&pkt_data[i].snr_max, &data[36 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i], sizeof(pkt_data[i].snr_max));
         /* --- 64-bits start --- */
-        pkt_data[i].crc = *((uint16_t*)(&data[40 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i]));
-        pkt_data[i].size = *((uint16_t*)(&data[42 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i]));
+        memcpy_le(&pkt_data[i].crc, &data[40 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i], sizeof(pkt_data[i].crc));
+        memcpy_le(&pkt_data[i].size, &data[42 + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i], sizeof(pkt_data[i].size));
         /* NO PADDING NEEDED HERE, END OF ARRAY */
         for (j = 0; j < 256; j++) {
-            (pkt_data[i].payload[j]) = *((uint8_t*)(&data[LGW_PKT_RX_METADATA_SIZE_ALIGNED + j + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i]));
+            (pkt_data[i].payload[j]) = data[LGW_PKT_RX_METADATA_SIZE_ALIGNED + j + LGW_PKT_RX_STRUCT_SIZE_ALIGNED * i];
         }
     }
-#pragma GCC diagnostic pop
 
     return nb_packet;
 }
@@ -383,39 +361,28 @@ int lgw_mcu_send(struct lgw_pkt_tx_s pkt_data) {
 
     /* struct to byte array */
     /* --- 64-bits start --- */
-    data[0] = *(((uint8_t *)(&pkt_data.freq_hz)));
-    data[1] = *(((uint8_t *)(&pkt_data.freq_hz)) + 1);
-    data[2] = *(((uint8_t *)(&pkt_data.freq_hz)) + 2);
-    data[3] = *(((uint8_t *)(&pkt_data.freq_hz)) + 3);
-    data[4] = *(((uint8_t *)(&pkt_data.tx_mode)));
+    memcpy_le(&data[0], &pkt_data.freq_hz, sizeof(pkt_data.freq_hz));   // Byte 0-3
+    data[4] = pkt_data.tx_mode;
     data[5] = PADDING;
     data[6] = PADDING;
     data[7] = PADDING;
     /* --- 64-bits start --- */
-    data[8] = *(((uint8_t *)(&pkt_data.count_us)));
-    data[9] = *(((uint8_t *)(&pkt_data.count_us)) + 1);
-    data[10] = *(((uint8_t *)(&pkt_data.count_us)) + 2);
-    data[11] = *(((uint8_t *)(&pkt_data.count_us)) + 3);
-    data[12] = *(((uint8_t *)(&pkt_data.rf_chain)));
+    memcpy_le(&data[8], &pkt_data.count_us, sizeof(pkt_data.count_us)); // Byte 8-11
+    data[12] = pkt_data.rf_chain;
     data[13] = *(((uint8_t *)(&pkt_data.rf_power)));
-    data[14] = *(((uint8_t *)(&pkt_data.modulation)));
-    data[15] = *(((uint8_t *)(&pkt_data.bandwidth)));
+    data[14] = pkt_data.modulation;
+    data[15] = pkt_data.bandwidth;
     /* --- 64-bits start --- */
-    data[16] = *(((uint8_t *)(&pkt_data.datarate)));
-    data[17] = *(((uint8_t *)(&pkt_data.datarate)) + 1);
-    data[18] = *(((uint8_t *)(&pkt_data.datarate)) + 2);
-    data[19] = *(((uint8_t *)(&pkt_data.datarate)) + 3);
-    data[20] = *(((uint8_t *)(&pkt_data.coderate)));
+    memcpy_le(&data[16], &pkt_data.datarate, sizeof(pkt_data.datarate)); // Byte 16-19
+    data[20] = pkt_data.coderate;
     data[21] = *(((uint8_t *)(&pkt_data.invert_pol)));
-    data[22] = *(((uint8_t *)(&pkt_data.f_dev)));
+    data[22] = pkt_data.f_dev;
     data[23] = PADDING;
     /* --- 64-bits start --- */
-    data[24] = *(((uint8_t *)(&pkt_data.preamble)));
-    data[25] = *(((uint8_t *)(&pkt_data.preamble)) + 1);
+    memcpy_le(&data[24], &pkt_data.preamble, sizeof(pkt_data.preamble)); // Byte 24-25
     data[26] = *(((uint8_t *)(&pkt_data.no_crc)));
     data[27] = *(((uint8_t *)(&pkt_data.no_header)));
-    data[28] = *(((uint8_t *)(&pkt_data.size)));
-    data[29] = *(((uint8_t *)(&pkt_data.size)) + 1);
+    memcpy_le(&data[28], &pkt_data.size, sizeof(pkt_data.size));    // Byte 28-29
     /* NO PADDING NEEDED HERE, END OF ARRAY */
     for (i = 0; i < 256; i++) {
         data[i + LGW_PKT_TX_METADATA_SIZE_ALIGNED] = *(((uint8_t *)(&pkt_data.payload)) + i);

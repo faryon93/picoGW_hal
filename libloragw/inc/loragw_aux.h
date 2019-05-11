@@ -46,6 +46,15 @@ void wait_ns_linux(unsigned long t);
 void wait_ms(unsigned long t);
 void wait_ns(unsigned long t);
 
+/**
+ * @brief Copys src to dst in little endian format.
+ * @param dest destination memory pointer
+ * @param src source memory pointer
+ * @param n number of bytes to copy
+ * @return pointer to the destination memory
+ */
+void *memcpy_le(void *dest, void *src, size_t n);
+
 #endif
 
 /* --- EOF ------------------------------------------------------------------ */

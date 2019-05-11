@@ -26,6 +26,7 @@ License: Revised BSD License, see LICENSE.TXT file include in the project
 
 #include <stdio.h>  /* printf fprintf */
 #include <time.h>   /* clock_nanosleep */
+#include <stdint.h> /* uint8_t */
 
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE MACROS ------------------------------------------------------- */
@@ -106,5 +107,18 @@ void wait_ns(unsigned long a) {
     DEBUG_PRINTF("System is not recognized.");
 #endif
 }
+
+void *memcpy_le(void *dest, void *src, size_t n)
+{
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    return memcpy(dest, src, n);
+#else
+    for (size_t i = 0; i < n; i++)
+        ((uint8_t *)dest)[i] = ((uint8_t *)src)[n - 1 - i];
+
+    return dest;
+#endif
+}
+
 
 /* --- EOF ------------------------------------------------------------------ */
