@@ -1,2 +1,13 @@
 *.o
 *.swp
+libloragw/inc/config.h
+libloragw/libloragw.a
+libloragw/test_loragw_cal
+libloragw/test_loragw_hal
+libloragw/test_loragw_reg
+util_chip_id/util_chip_id
+util_com_stress/util_com_stress
+util_pkt_logger/util_pkt_logger
+util_tx_continuous/util_tx_continuous
+util_boot/util_boot
+util_tx_test/util_tx_test
